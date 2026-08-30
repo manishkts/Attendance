@@ -51,6 +51,7 @@
     .btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
     .btn:hover { opacity: 0.9; }
     .btn-danger { background: var(--danger); padding: 5px 10px; font-size: 0.8rem; }
+    .btn-secondary { background: #3498db; }
 
     /* Data Tables */
     table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
@@ -75,6 +76,7 @@
     <button class="nav-btn" onclick="switchTab('advances')">💵 Advances</button>
     <button class="nav-btn" onclick="switchTab('shop')">🛒 Shop Deductions</button>
     <button class="nav-btn" onclick="switchTab('payroll')">💰 Financial Payroll</button>
+    <button class="nav-btn" onclick="switchTab('backup')">💾 Backup & Sync</button>
   </sidebar>
 
   <!-- Main Application Content -->
@@ -322,6 +324,27 @@
         </thead>
         <tbody></tbody>
       </table>
+    </div>
+
+    <!-- TAB 8: BACKUP & DATA TRANSFER -->
+    <div id="backup" class="tab-content">
+      <div class="form-section">
+        <h3>Export Database Backup</h3>
+        <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">
+          Download a full snapshot file (`workshop_backup.json`) of all workers, attendance, advances, and shop logs. You can transfer this file to another phone or computer.
+        </p>
+        <button class="btn" onclick="exportData()">📥 Export Data File (JSON)</button>
+      </div>
+
+      <div class="form-section">
+        <h3>Import Database Backup</h3>
+        <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">
+          Select a previously saved backup file (`workshop_backup.json`) to load data into this device's browser.
+        </p>
+        <input type="file" id="importFile" accept=".json" style="margin-bottom: 15px;">
+        <br>
+        <button class="btn btn-secondary" onclick="importData()">📤 Load & Import File</button>
+      </div>
     </div>
   </main>
 
@@ -630,6 +653,63 @@
         e.target.result.forEach(s => shopSum += s.cost);
         document.getElementById("m-shop").innerText = shopSum.toFixed(2);
       };
+    }
+
+    // Backup Export Handler
+    function exportData() {
+      const backup = {};
+      const stores = ["workers", "logs", "advances", "shop"];
+      const tx = db.transaction(stores, "readonly");
+
+      stores.forEach(store => {
+        tx.objectStore(store).getAll().onsuccess = (e) => {
+          backup[store] = e.target.result;
+        };
+      });
+
+      tx.oncomplete = () => {
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `workshop_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+    }
+
+    // Backup Import Handler
+    function importData() {
+      const fileInput = document.getElementById("importFile");
+      if (!fileInput.files.length) {
+        alert("Please select a JSON backup file first.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const backup = JSON.parse(e.target.result);
+          const stores = ["workers", "logs", "advances", "shop"];
+          const tx = db.transaction(stores, "readwrite");
+
+          stores.forEach(storeName => {
+            if (backup[storeName]) {
+              const store = tx.objectStore(storeName);
+              store.clear();
+              backup[storeName].forEach(item => store.add(item));
+            }
+          });
+
+          tx.oncomplete = () => {
+            alert("Data successfully restored from backup!");
+            refreshUI();
+          };
+        } catch (err) {
+          alert("Error parsing backup file. Make sure it is a valid backup JSON file.");
+        }
+      };
+      reader.readAsText(fileInput.files[0]);
     }
 
     // Generic Delete Record
