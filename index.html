@@ -19,21 +19,18 @@
       --border: #e2e8f0;
       --radius: 12px;
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background-color: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
-    /* Mobile Header & Overlay */
     .mobile-header { display: flex; align-items: center; justify-content: space-between; background: var(--primary); color: white; padding: 14px 18px; width: 100%; position: fixed; top: 0; left: 0; z-index: 50; }
-    .mobile-header h2 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; }
+    .mobile-header h2 { font-size: 1.05rem; font-weight: 700; }
     .menu-toggle { background: rgba(255, 255, 255, 0.12); border: none; color: white; font-size: 1.3rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(2px); z-index: 90; }
     .sidebar-overlay.active { display: block; }
 
-    /* Sidebar Navigation */
-    sidebar { width: 280px; background: var(--primary); color: white; display: flex; flex-direction: column; z-index: 100; transition: transform 0.25s ease-in-out; position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,0.15); }
+    sidebar { width: 280px; background: var(--primary); color: white; display: flex; flex-direction: column; z-index: 100; transition: transform 0.25s ease-in-out; position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); }
     sidebar.open { transform: translateX(0); }
     .sidebar-brand { padding: 22px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
     .sidebar-brand h2 { font-size: 1.1rem; font-weight: 700; color: #f8fafc; }
@@ -44,51 +41,42 @@
     .nav-btn:hover { background: rgba(255,255,255,0.06); color: #f8fafc; }
     .nav-btn.active { background: var(--accent); color: white; font-weight: 600; }
 
-    /* Main Content Area */
     main { flex: 1; padding: 75px 16px 30px; overflow-y: auto; width: 100%; }
     .tab-content { display: none; max-width: 1000px; margin: 0 auto; }
     .tab-content.active { display: block; animation: fadeIn 0.2s ease-in; }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Header Banner */
     .header-banner { background: var(--card-bg); padding: 18px 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); margin-bottom: 20px; }
-    .header-banner h1 { font-size: 1.3rem; font-weight: 700; color: var(--primary); letter-spacing: -0.02em; }
+    .header-banner h1 { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
     .header-banner p { color: var(--text-muted); font-size: 0.84rem; margin-top: 4px; }
 
-    /* Metric Cards Grid */
     .grid-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
     .metric-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
     .metric-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }
     .metric-card h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
     .metric-card p { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-top: 6px; }
 
-    /* Flowchart Component */
     .flowchart-container { background: var(--card-bg); padding: 18px 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); margin-bottom: 20px; }
     .flowchart-container h3 { font-size: 0.95rem; font-weight: 700; color: var(--primary); }
     .flowchart { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 14px; }
     .flow-step { background: #f1f5f9; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 0.85rem; color: var(--primary); }
     .flow-step small { font-weight: 400; color: var(--text-muted); display: block; margin-top: 2px; }
 
-    /* Cards & Forms */
     .card { background: var(--card-bg); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); margin-bottom: 20px; }
-    .card-title { font-size: 1.05rem; font-weight: 700; color: var(--primary); margin-bottom: 16px; letter-spacing: -0.01em; }
+    .card-title { font-size: 1.05rem; font-weight: 700; color: var(--primary); margin-bottom: 16px; }
 
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 0.83rem; font-weight: 600; margin-bottom: 6px; color: var(--primary-light); }
-    .form-group input, .form-group select { width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; color: var(--text); background: #ffffff; outline: none; transition: border-color 0.15s; }
+    .form-group input, .form-group select { width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; color: var(--text); background: #ffffff; outline: none; }
     .form-group input:focus, .form-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
     .date-range-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
 
-    /* Buttons */
-    .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: white; border: none; padding: 12px 18px; border-radius: 8px; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: white; border: none; padding: 12px 18px; border-radius: 8px; font-size: 0.92rem; font-weight: 600; cursor: pointer; width: 100%; }
     .btn:hover { background: var(--accent-hover); }
     .btn-danger { background: #fee2e2; color: var(--danger); border: none; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer; width: auto; }
-    .btn-danger:hover { background: #fecaca; }
     .btn-secondary { background: #0f172a; }
-    .btn-secondary:hover { background: #1e293b; }
 
-    /* Responsive Tables */
     .table-container { background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; min-width: 500px; }
@@ -96,11 +84,10 @@
     th { background: #f8fafc; font-weight: 600; color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
     tr:last-child td { border-bottom: none; }
 
-    /* Desktop Viewport Queries */
     @media (min-width: 768px) {
       .mobile-header { display: none; }
       .sidebar-overlay { display: none !important; }
-      sidebar { position: static; transform: none; width: 260px; box-shadow: none; border-right: 1px solid rgba(255,255,255,0.08); }
+      sidebar { position: static; transform: none; width: 260px; }
       .close-btn { display: none; }
       main { padding: 30px; }
       .grid-metrics { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
@@ -112,16 +99,13 @@
 </head>
 <body>
 
-  <!-- Mobile Top Header Bar -->
   <header class="mobile-header">
     <h2>🪚 Workshop Tracker</h2>
     <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
   </header>
 
-  <!-- Sidebar Overlay -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-  <!-- Responsive Navigation Sidebar -->
   <sidebar id="sidebar">
     <div class="sidebar-brand">
       <h2>🪚 Workshop System</h2>
@@ -139,11 +123,10 @@
     </div>
   </sidebar>
 
-  <!-- Main Content Container -->
   <main>
     <div class="header-banner">
       <h1>🪚 Furniture Workshop Record & Monthly Payroll</h1>
-      <p>Continuous Cloud Synchronization • Real-Time Multi-Device Tracking</p>
+      <p>Synchronized Cloud Backend • Preserved Worker History</p>
     </div>
 
     <!-- TAB 1: DASHBOARD -->
@@ -174,7 +157,7 @@
         <form id="workerForm">
           <div class="form-group">
             <label>Worker Full Name</label>
-            <input type="text" id="wName" placeholder="e.g. Ramesh Thapa" required>
+            <input type="text" id="wName" required>
           </div>
           <div class="form-group">
             <label>Role / Skill</label>
@@ -263,12 +246,8 @@
           <div class="form-group">
             <label>Date Selection</label>
             <div class="date-range-grid">
-              <div>
-                <input type="date" id="logStartDate" required>
-              </div>
-              <div>
-                <input type="date" id="logEndDate" placeholder="End Date (Optional)">
-              </div>
+              <div><input type="date" id="logStartDate" required></div>
+              <div><input type="date" id="logEndDate" placeholder="End Date (Optional)"></div>
             </div>
           </div>
 
@@ -345,7 +324,7 @@
           </div>
           <div class="form-group">
             <label>Item Description</label>
-            <input type="text" id="shopItem" placeholder="e.g. Snacks / Blade" required>
+            <input type="text" id="shopItem" required>
           </div>
           <div class="form-group">
             <label>Cost (NPR)</label>
@@ -410,24 +389,21 @@
     <div id="backup" class="tab-content">
       <div class="card">
         <h3 class="card-title">Export Cloud Backup</h3>
-        <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 14px;">
-          Download a full offline JSON file of all data.
-        </p>
         <button class="btn" onclick="exportData()">📥 Export Data (JSON)</button>
       </div>
 
       <div class="card">
-        <h3 class="card-title">Import Cloud Backup</h3>
+        <h3 class="card-title">Import Previous JSON Backup</h3>
         <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 14px;">
-          Select a previously exported JSON backup file to load into Firestore.
+          Select your <code>workshop_backup_2026-09-28.json</code> file to restore all past data.
         </p>
         <input type="file" id="importFile" accept=".json" style="margin-bottom: 14px;">
-        <button class="btn btn-secondary" onclick="importData()">📤 Upload & Import</button>
+        <button class="btn btn-secondary" id="importBtn" onclick="importData()">📤 Upload & Import</button>
       </div>
     </div>
   </main>
 
-  <!-- Firebase Integration -->
+  <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -451,15 +427,11 @@
     let advancesCache = [];
     let shopCache = [];
 
-    // Responsive Drawer Toggle
     function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('active');
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('active');
     }
 
-    // Tab Navigation & Auto-close on Mobile
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -475,28 +447,28 @@
       if (tabId === 'search') loadWorkerProfile();
     }
 
-    // Real-Time Listeners
+    // Real-Time Sync Listeners
     db.collection("workers").onSnapshot(snapshot => {
-      workersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      workersCache = snapshot.docs.map(doc => ({ id: String(doc.id), ...doc.data() }));
       populateWorkerDropdowns();
       renderWorkers();
       renderDashboardMetrics();
     });
 
     db.collection("logs").onSnapshot(snapshot => {
-      logsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      logsCache = snapshot.docs.map(doc => ({ id: String(doc.id), ...doc.data() }));
       renderLogs();
       renderDashboardMetrics();
     });
 
     db.collection("advances").onSnapshot(snapshot => {
-      advancesCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      advancesCache = snapshot.docs.map(doc => ({ id: String(doc.id), ...doc.data() }));
       renderAdvances();
       renderDashboardMetrics();
     });
 
     db.collection("shop").onSnapshot(snapshot => {
-      shopCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      shopCache = snapshot.docs.map(doc => ({ id: String(doc.id), ...doc.data() }));
       renderShop();
       renderDashboardMetrics();
     });
@@ -531,7 +503,7 @@
     function renderWorkers() {
       document.querySelector("#workerTable tbody").innerHTML = workersCache.map(w => `
         <tr>
-          <td>${w.id.substring(0, 6)}</td>
+          <td>${w.id}</td>
           <td><strong>${w.name}</strong></td>
           <td>${w.skill}</td>
           <td><button class="btn-danger" onclick="deleteRecord('workers', '${w.id}')">Delete</button></td>
@@ -541,17 +513,14 @@
     // Work & OT Logging
     document.getElementById("logForm").onsubmit = async (e) => {
       e.preventDefault();
-      const workerId = document.getElementById("logWorker").value;
+      const workerId = String(document.getElementById("logWorker").value);
       const startDate = new Date(document.getElementById("logStartDate").value);
       const endDateStr = document.getElementById("logEndDate").value;
       const endDate = endDateStr ? new Date(endDateStr) : new Date(startDate);
       const type = parseFloat(document.getElementById("logType").value);
       const ot = parseFloat(document.getElementById("logOt").value) || 0;
 
-      if (endDate < startDate) {
-        alert("End Date cannot be before Start Date.");
-        return;
-      }
+      if (endDate < startDate) return alert("End Date cannot be before Start Date.");
 
       const batch = db.batch();
       let curr = new Date(startDate);
@@ -571,13 +540,13 @@
     };
 
     function renderLogs() {
-      const workersMap = Object.fromEntries(workersCache.map(w => [w.id, w.name]));
+      const workersMap = Object.fromEntries(workersCache.map(w => [String(w.id), w.name]));
       document.querySelector("#logTable tbody").innerHTML = logsCache.map(l => `
         <tr>
           <td>${l.date}</td>
-          <td><strong>${workersMap[l.workerId] || 'Unknown'}</strong></td>
+          <td><strong>${workersMap[String(l.workerId)] || 'Unknown'}</strong></td>
           <td>${l.type}</td>
-          <td>NPR ${l.ot.toFixed(2)}</td>
+          <td>NPR ${Number(l.ot || 0).toFixed(2)}</td>
           <td><button class="btn-danger" onclick="deleteRecord('logs', '${l.id}')">Delete</button></td>
         </tr>`).join('');
     }
@@ -586,7 +555,7 @@
     document.getElementById("advForm").onsubmit = async (e) => {
       e.preventDefault();
       await db.collection("advances").add({
-        workerId: document.getElementById("advWorker").value,
+        workerId: String(document.getElementById("advWorker").value),
         date: document.getElementById("advDate").value,
         amount: parseFloat(document.getElementById("advAmount").value) || 0,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -595,21 +564,21 @@
     };
 
     function renderAdvances() {
-      const workersMap = Object.fromEntries(workersCache.map(w => [w.id, w.name]));
+      const workersMap = Object.fromEntries(workersCache.map(w => [String(w.id), w.name]));
       document.querySelector("#advTable tbody").innerHTML = advancesCache.map(a => `
         <tr>
           <td>${a.date}</td>
-          <td><strong>${workersMap[a.workerId] || 'Unknown'}</strong></td>
-          <td>NPR ${a.amount.toFixed(2)}</td>
+          <td><strong>${workersMap[String(a.workerId)] || 'Unknown'}</strong></td>
+          <td>NPR ${Number(a.amount || 0).toFixed(2)}</td>
           <td><button class="btn-danger" onclick="deleteRecord('advances', '${a.id}')">Delete</button></td>
         </tr>`).join('');
     }
 
-    // Shop Recording
+    // Shop Deductions
     document.getElementById("shopForm").onsubmit = async (e) => {
       e.preventDefault();
       await db.collection("shop").add({
-        workerId: document.getElementById("shopWorker").value,
+        workerId: String(document.getElementById("shopWorker").value),
         date: document.getElementById("shopDate").value,
         item: document.getElementById("shopItem").value,
         cost: parseFloat(document.getElementById("shopCost").value) || 0,
@@ -619,70 +588,70 @@
     };
 
     function renderShop() {
-      const workersMap = Object.fromEntries(workersCache.map(w => [w.id, w.name]));
+      const workersMap = Object.fromEntries(workersCache.map(w => [String(w.id), w.name]));
       document.querySelector("#shopTable tbody").innerHTML = shopCache.map(s => `
         <tr>
           <td>${s.date}</td>
-          <td><strong>${workersMap[s.workerId] || 'Unknown'}</strong></td>
+          <td><strong>${workersMap[String(s.workerId)] || 'Unknown'}</strong></td>
           <td>${s.item}</td>
-          <td>NPR ${s.cost.toFixed(2)}</td>
+          <td>NPR ${Number(s.cost || 0).toFixed(2)}</td>
           <td><button class="btn-danger" onclick="deleteRecord('shop', '${s.id}')">Delete</button></td>
         </tr>`).join('');
     }
 
-    // Profile Lookup
+    // Worker Search Profile
     function loadWorkerProfile() {
-      const targetWorkerId = document.getElementById("searchWorker").value;
+      const targetWorkerId = String(document.getElementById("searchWorker").value);
       if (!targetWorkerId) {
         document.getElementById("profileResults").style.display = "none";
         return;
       }
       document.getElementById("profileResults").style.display = "block";
 
-      const workerLogs = logsCache.filter(l => l.workerId === targetWorkerId);
+      const workerLogs = logsCache.filter(l => String(l.workerId) === targetWorkerId);
       let days = 0, ot = 0;
       document.querySelector("#pLogTable tbody").innerHTML = workerLogs.map(l => {
-        days += l.type; ot += l.ot;
-        return `<tr><td>${l.date}</td><td>${l.type === 1 ? 'Full Day' : 'Half Day'}</td><td>NPR ${l.ot.toFixed(2)}</td></tr>`;
+        days += Number(l.type || 0); ot += Number(l.ot || 0);
+        return `<tr><td>${l.date}</td><td>${l.type === 1 ? 'Full Day' : 'Half Day'}</td><td>NPR ${Number(l.ot || 0).toFixed(2)}</td></tr>`;
       }).join('') || '<tr><td colspan="3">No work logs found.</td></tr>';
       document.getElementById("p-days").innerText = days.toFixed(1);
       document.getElementById("p-ot").innerText = `NPR ${ot.toFixed(2)}`;
 
-      const workerAdvs = advancesCache.filter(a => a.workerId === targetWorkerId);
+      const workerAdvs = advancesCache.filter(a => String(a.workerId) === targetWorkerId);
       let advSum = 0;
       document.querySelector("#pAdvTable tbody").innerHTML = workerAdvs.map(a => {
-        advSum += a.amount;
-        return `<tr><td>${a.date}</td><td>NPR ${a.amount.toFixed(2)}</td></tr>`;
+        advSum += Number(a.amount || 0);
+        return `<tr><td>${a.date}</td><td>NPR ${Number(a.amount || 0).toFixed(2)}</td></tr>`;
       }).join('') || '<tr><td colspan="2">No advances recorded.</td></tr>';
       document.getElementById("p-advances").innerText = `NPR ${advSum.toFixed(2)}`;
 
-      const workerShop = shopCache.filter(s => s.workerId === targetWorkerId);
+      const workerShop = shopCache.filter(s => String(s.workerId) === targetWorkerId);
       let shopSum = 0;
       document.querySelector("#pShopTable tbody").innerHTML = workerShop.map(s => {
-        shopSum += s.cost;
-        return `<tr><td>${s.date}</td><td>${s.item}</td><td>NPR ${s.cost.toFixed(2)}</td></tr>`;
+        shopSum += Number(s.cost || 0);
+        return `<tr><td>${s.date}</td><td>${s.item}</td><td>NPR ${Number(s.cost || 0).toFixed(2)}</td></tr>`;
       }).join('') || '<tr><td colspan="3">No shop items recorded.</td></tr>';
       document.getElementById("p-shop").innerText = `NPR ${shopSum.toFixed(2)}`;
     }
 
-    // Monthly Payroll Calculation
+    // Financial Payroll Settlement
     document.getElementById("payrollForm").onsubmit = (e) => {
       e.preventDefault();
-      const targetWorkerId = document.getElementById("payWorker").value;
+      const targetWorkerId = String(document.getElementById("payWorker").value);
       const dailyWage = parseFloat(document.getElementById("payWage").value) || 0;
       const paidAmount = parseFloat(document.getElementById("payPaid").value) || 0;
 
-      const worker = workersCache.find(w => w.id === targetWorkerId);
+      const worker = workersCache.find(w => String(w.id) === targetWorkerId);
       const workerName = worker ? worker.name : "Unknown";
 
       let workedDays = 0, totalOt = 0, advancesTotal = 0, shopTotal = 0;
-      logsCache.filter(l => l.workerId === targetWorkerId).forEach(l => {
-        workedDays += l.type;
-        totalOt += l.ot;
+      logsCache.filter(l => String(l.workerId) === targetWorkerId).forEach(l => {
+        workedDays += Number(l.type || 0);
+        totalOt += Number(l.ot || 0);
       });
 
-      advancesCache.filter(a => a.workerId === targetWorkerId).forEach(a => advancesTotal += a.amount);
-      shopCache.filter(s => s.workerId === targetWorkerId).forEach(s => shopTotal += s.cost);
+      advancesCache.filter(a => String(a.workerId) === targetWorkerId).forEach(a => advancesTotal += Number(a.amount || 0));
+      shopCache.filter(s => String(s.workerId) === targetWorkerId).forEach(s => shopTotal += Number(s.cost || 0));
 
       const grossEarned = (workedDays * dailyWage) + totalOt;
       const remainingBalance = grossEarned - (advancesTotal + shopTotal + paidAmount);
@@ -701,31 +670,28 @@
         </tr>`;
     };
 
-    // Dashboard Metrics
     function renderDashboardMetrics() {
       document.getElementById("m-workers").innerText = workersCache.length;
       let totalDays = 0, totalOt = 0;
-      logsCache.forEach(l => { totalDays += l.type; totalOt += l.ot; });
+      logsCache.forEach(l => { totalDays += Number(l.type || 0); totalOt += Number(l.ot || 0); });
       document.getElementById("m-days").innerText = totalDays.toFixed(1);
       document.getElementById("m-ot").innerText = totalOt.toFixed(2);
 
       let advSum = 0;
-      advancesCache.forEach(a => advSum += a.amount);
+      advancesCache.forEach(a => advSum += Number(a.amount || 0));
       document.getElementById("m-advances").innerText = advSum.toFixed(2);
 
       let shopSum = 0;
-      shopCache.forEach(s => shopSum += s.cost);
+      shopCache.forEach(s => shopSum += Number(s.cost || 0));
       document.getElementById("m-shop").innerText = shopSum.toFixed(2);
     }
 
-    // Permanent Deletion
     async function deleteRecord(collectionName, id) {
       if (confirm("Permanently delete this record?")) {
-        await db.collection(collectionName).doc(id).delete();
+        await db.collection(collectionName).doc(String(id)).delete();
       }
     }
 
-    // Backup Export
     function exportData() {
       const backup = { workers: workersCache, logs: logsCache, advances: advancesCache, shop: shopCache };
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
@@ -737,25 +703,77 @@
       URL.revokeObjectURL(url);
     }
 
-    // Backup Import
-    function importData() {
+    // Accurate Import Function Preserving IDs
+    async function importData() {
       const fileInput = document.getElementById("importFile");
-      if (!fileInput.files.length) return alert("Select a JSON backup file first.");
+      if (!fileInput.files.length) return alert("Select your JSON backup file first.");
+
+      const btn = document.getElementById("importBtn");
+      btn.disabled = true;
+      btn.innerText = "Importing...";
+
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const backup = JSON.parse(e.target.result);
-          for (const col of ["workers", "logs", "advances", "shop"]) {
-            if (backup[col] && Array.isArray(backup[col])) {
-              for (const item of backup[col]) {
-                const { id, ...data } = item;
-                await db.collection(col).add(data);
-              }
+
+          // 1. Import Workers preserving original numeric IDs
+          if (backup.workers && Array.isArray(backup.workers)) {
+            for (const w of backup.workers) {
+              const workerId = String(w.id);
+              await db.collection("workers").doc(workerId).set({
+                name: w.name,
+                skill: w.skill,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
             }
           }
-          alert("Import completed successfully!");
+
+          // 2. Import Logs matching workerId
+          if (backup.logs && Array.isArray(backup.logs)) {
+            for (const l of backup.logs) {
+              await db.collection("logs").add({
+                workerId: String(l.workerId),
+                date: l.date,
+                type: Number(l.type),
+                ot: Number(l.ot || 0),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            }
+          }
+
+          // 3. Import Advances matching workerId
+          if (backup.advances && Array.isArray(backup.advances)) {
+            for (const a of backup.advances) {
+              await db.collection("advances").add({
+                workerId: String(a.workerId),
+                date: a.date,
+                amount: Number(a.amount || 0),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            }
+          }
+
+          // 4. Import Shop matching workerId
+          if (backup.shop && Array.isArray(backup.shop)) {
+            for (const s of backup.shop) {
+              await db.collection("shop").add({
+                workerId: String(s.workerId),
+                date: s.date,
+                item: s.item,
+                cost: Number(s.cost || 0),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            }
+          }
+
+          alert("All historical workers, attendance logs, and advances successfully restored!");
         } catch (err) {
-          alert("Invalid backup file.");
+          console.error(err);
+          alert("Import failed: " + err.message);
+        } finally {
+          btn.disabled = false;
+          btn.innerText = "📤 Upload & Import";
         }
       };
       reader.readAsText(fileInput.files[0]);
