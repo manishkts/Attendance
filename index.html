@@ -57,12 +57,6 @@
     .metric-card h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
     .metric-card p { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-top: 6px; }
 
-    .flowchart-container { background: var(--card-bg); padding: 18px 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); margin-bottom: 20px; }
-    .flowchart-container h3 { font-size: 0.95rem; font-weight: 700; color: var(--primary); }
-    .flowchart { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 14px; }
-    .flow-step { background: #f1f5f9; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 0.85rem; color: var(--primary); }
-    .flow-step small { font-weight: 400; color: var(--text-muted); display: block; margin-top: 2px; }
-
     .card { background: var(--card-bg); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); margin-bottom: 20px; }
     .card-title { font-size: 1.05rem; font-weight: 700; color: var(--primary); margin-bottom: 16px; }
 
@@ -92,7 +86,6 @@
       main { padding: 30px; }
       .grid-metrics { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
       .date-range-grid { grid-template-columns: 1fr 1fr; }
-      .flowchart { grid-template-columns: repeat(4, 1fr); }
       .btn { width: auto; }
     }
   </style>
@@ -126,7 +119,7 @@
   <main>
     <div class="header-banner">
       <h1>🪚 Furniture Workshop Record & Monthly Payroll</h1>
-      <p>Synchronized Cloud Backend • Preserved Worker History</p>
+      <p>Clean Numeric IDs • Real-Time Synchronization</p>
     </div>
 
     <!-- TAB 1: DASHBOARD -->
@@ -138,16 +131,6 @@
         <div class="metric-card"><h4>Advances</h4><p id="m-advances">0.00</p></div>
         <div class="metric-card"><h4>Shop Items</h4><p id="m-shop">0.00</p></div>
       </div>
-
-      <div class="flowchart-container">
-        <h3>System Operations & Payroll Flow Chart</h3>
-        <div class="flowchart">
-          <div class="flow-step">1. Register Worker<small>Role & Base Wage</small></div>
-          <div class="flow-step">2. Daily Logging<small>Full/Half Day & OT</small></div>
-          <div class="flow-step">3. Deductions<small>Advances & Shop</small></div>
-          <div class="flow-step">4. Settlement<small>Net Balance Calculation</small></div>
-        </div>
-      </div>
     </div>
 
     <!-- TAB 2: WORKERS -->
@@ -157,7 +140,7 @@
         <form id="workerForm">
           <div class="form-group">
             <label>Worker Full Name</label>
-            <input type="text" id="wName" required>
+            <input type="text" id="wName" placeholder="e.g. Ramesh Thapa" required>
           </div>
           <div class="form-group">
             <label>Role / Skill</label>
@@ -447,9 +430,10 @@
       if (tabId === 'search') loadWorkerProfile();
     }
 
-    // Real-Time Sync Listeners
+    // Real-Time Listeners
     db.collection("workers").onSnapshot(snapshot => {
       workersCache = snapshot.docs.map(doc => ({ id: String(doc.id), ...doc.data() }));
+      workersCache.sort((a, b) => (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0));
       populateWorkerDropdowns();
       renderWorkers();
       renderDashboardMetrics();
@@ -476,22 +460,30 @@
     function populateWorkerDropdowns() {
       document.querySelectorAll('.worker-select').forEach(select => {
         const currentVal = select.value;
-        select.innerHTML = workersCache.map(w => `<option value="${w.id}">${w.name} (${w.skill})</option>`).join('');
+        select.innerHTML = workersCache.map(w => `<option value="${w.id}">W-${w.id}: ${w.name} (${w.skill})</option>`).join('');
         if (currentVal) select.value = currentVal;
       });
     }
 
-    // Worker Registration
+    // Worker Registration: Auto-Increment Numeric ID (No Hashes)
     document.getElementById("workerForm").onsubmit = async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('button');
       btn.disabled = true;
+
       try {
-        await db.collection("workers").add({
+        // Calculate the next clean numeric ID
+        const existingNumericIds = workersCache.map(w => parseInt(w.id, 10)).filter(n => !isNaN(n));
+        const nextId = existingNumericIds.length > 0 ? Math.max(...existingNumericIds) + 1 : 1;
+        const newDocId = String(nextId);
+
+        await db.collection("workers").doc(newDocId).set({
+          id: nextId,
           name: document.getElementById("wName").value.trim(),
           skill: document.getElementById("wSkill").value,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+
         document.getElementById("workerForm").reset();
       } catch (err) {
         alert("Save Failed: " + err.message);
@@ -503,7 +495,7 @@
     function renderWorkers() {
       document.querySelector("#workerTable tbody").innerHTML = workersCache.map(w => `
         <tr>
-          <td>${w.id}</td>
+          <td><strong>W-${w.id}</strong></td>
           <td><strong>${w.name}</strong></td>
           <td>${w.skill}</td>
           <td><button class="btn-danger" onclick="deleteRecord('workers', '${w.id}')">Delete</button></td>
@@ -574,7 +566,7 @@
         </tr>`).join('');
     }
 
-    // Shop Deductions
+    // Shop Recording
     document.getElementById("shopForm").onsubmit = async (e) => {
       e.preventDefault();
       await db.collection("shop").add({
@@ -634,7 +626,7 @@
       document.getElementById("p-shop").innerText = `NPR ${shopSum.toFixed(2)}`;
     }
 
-    // Financial Payroll Settlement
+    // Payroll Calculation
     document.getElementById("payrollForm").onsubmit = (e) => {
       e.preventDefault();
       const targetWorkerId = String(document.getElementById("payWorker").value);
@@ -693,7 +685,12 @@
     }
 
     function exportData() {
-      const backup = { workers: workersCache, logs: logsCache, advances: advancesCache, shop: shopCache };
+      const backup = {
+        workers: workersCache.map(w => ({ id: parseInt(w.id, 10) || w.id, name: w.name, skill: w.skill })),
+        logs: logsCache,
+        advances: advancesCache,
+        shop: shopCache
+      };
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -703,7 +700,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // Accurate Import Function Preserving IDs
     async function importData() {
       const fileInput = document.getElementById("importFile");
       if (!fileInput.files.length) return alert("Select your JSON backup file first.");
@@ -717,11 +713,10 @@
         try {
           const backup = JSON.parse(e.target.result);
 
-          // 1. Import Workers preserving original numeric IDs
           if (backup.workers && Array.isArray(backup.workers)) {
             for (const w of backup.workers) {
-              const workerId = String(w.id);
-              await db.collection("workers").doc(workerId).set({
+              await db.collection("workers").doc(String(w.id)).set({
+                id: w.id,
                 name: w.name,
                 skill: w.skill,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -729,7 +724,6 @@
             }
           }
 
-          // 2. Import Logs matching workerId
           if (backup.logs && Array.isArray(backup.logs)) {
             for (const l of backup.logs) {
               await db.collection("logs").add({
@@ -742,7 +736,6 @@
             }
           }
 
-          // 3. Import Advances matching workerId
           if (backup.advances && Array.isArray(backup.advances)) {
             for (const a of backup.advances) {
               await db.collection("advances").add({
@@ -754,7 +747,6 @@
             }
           }
 
-          // 4. Import Shop matching workerId
           if (backup.shop && Array.isArray(backup.shop)) {
             for (const s of backup.shop) {
               await db.collection("shop").add({
@@ -767,7 +759,7 @@
             }
           }
 
-          alert("All historical workers, attendance logs, and advances successfully restored!");
+          alert("All historical data successfully restored!");
         } catch (err) {
           console.error(err);
           alert("Import failed: " + err.message);
