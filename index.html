@@ -83,10 +83,10 @@
   <main>
     <div class="header-banner">
       <h1>🪚 Furniture Workshop Record & Monthly Payroll</h1>
-      <p>Continuous Browser Storage (IndexedDB) • Attendance • Deductions • Net Payroll Calculation</p>
+      <p>Cloud Synchronized (Firebase) • Real-Time Multi-Device • Net Payroll Calculation</p>
     </div>
 
-    <!-- TAB 1: DASHBOARD & WORKFLOW CHART -->
+    <!-- TAB 1: DASHBOARD -->
     <div id="dashboard" class="tab-content active">
       <div class="grid-metrics">
         <div class="metric-card"><h4>Active Workers</h4><p id="m-workers">0</p></div>
@@ -96,7 +96,6 @@
         <div class="metric-card"><h4>Shop Items (NPR)</h4><p id="m-shop">0.00</p></div>
       </div>
 
-      <!-- Architectural System Flow Chart Figure -->
       <div class="flowchart-container">
         <h3>System Operations & Payroll Flow Chart</h3>
         <div class="flowchart">
@@ -331,7 +330,7 @@
       <div class="form-section">
         <h3>Export Database Backup</h3>
         <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">
-          Download a full snapshot file (`workshop_backup.json`) of all workers, attendance, advances, and shop logs. You can transfer this file to another phone or computer.
+          Download a full JSON snapshot of all workers, attendance, advances, and shop logs.
         </p>
         <button class="btn" onclick="exportData()">📥 Export Data File (JSON)</button>
       </div>
@@ -339,7 +338,7 @@
       <div class="form-section">
         <h3>Import Database Backup</h3>
         <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">
-          Select a previously saved backup file (`workshop_backup.json`) to load data into this device's browser.
+          Select a previously saved backup file (`.json`) to populate the cloud database.
         </p>
         <input type="file" id="importFile" accept=".json" style="margin-bottom: 15px;">
         <br>
@@ -348,22 +347,58 @@
     </div>
   </main>
 
+  <!-- Firebase Scripts (Compat Version - No Build Tools Needed) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
   <script>
-    let db;
-    const request = indexedDB.open("WorkshopStorageDB", 1);
-
-    request.onupgradeneeded = (e) => {
-      db = e.target.result;
-      if (!db.objectStoreNames.contains("workers")) db.createObjectStore("workers", { keyPath: "id", autoIncrement: true });
-      if (!db.objectStoreNames.contains("logs")) db.createObjectStore("logs", { keyPath: "id", autoIncrement: true });
-      if (!db.objectStoreNames.contains("advances")) db.createObjectStore("advances", { keyPath: "id", autoIncrement: true });
-      if (!db.objectStoreNames.contains("shop")) db.createObjectStore("shop", { keyPath: "id", autoIncrement: true });
+    // Configuration from your Attendance Firebase project
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFHTXC1Pr2fsrsBYHN8-3pFcQi6nWPH2Y",
+      authDomain: "attendance-cd054.firebaseapp.com",
+      projectId: "attendance-cd054",
+      storageBucket: "attendance-cd054.firebasestorage.app",
+      messagingSenderId: "758296634957",
+      appId: "1:758296634957:web:9db29d1531e35178165e04",
+      measurementId: "G-41QRJMC3CQ"
     };
 
-    request.onsuccess = (e) => {
-      db = e.target.result;
-      refreshUI();
-    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Enable offline caching (persists records locally if workshop internet goes down)
+    db.enablePersistence().catch(err => console.warn("Persistence error:", err.code));
+
+    let workersCache = [];
+    let logsCache = [];
+    let advancesCache = [];
+    let shopCache = [];
+
+    // Real-Time Listeners (Syncs all connected phones and PCs automatically)
+    db.collection("workers").onSnapshot(snapshot => {
+      workersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      populateWorkerDropdowns();
+      renderWorkers();
+      renderDashboardMetrics();
+    });
+
+    db.collection("logs").onSnapshot(snapshot => {
+      logsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderLogs();
+      renderDashboardMetrics();
+    });
+
+    db.collection("advances").onSnapshot(snapshot => {
+      advancesCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderAdvances();
+      renderDashboardMetrics();
+    });
+
+    db.collection("shop").onSnapshot(snapshot => {
+      shopCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderShop();
+      renderDashboardMetrics();
+    });
 
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -373,350 +408,256 @@
       if (tabId === 'search') loadWorkerProfile();
     }
 
-    function refreshUI() {
-      populateWorkerDropdowns();
-      renderWorkers();
-      renderLogs();
-      renderAdvances();
-      renderShop();
-      renderDashboardMetrics();
-    }
-
     function populateWorkerDropdowns() {
-      const tx = db.transaction("workers", "readonly");
-      tx.objectStore("workers").getAll().onsuccess = (e) => {
-        const workers = e.target.result;
-        document.querySelectorAll('.worker-select').forEach(select => {
-          const currentVal = select.value;
-          select.innerHTML = workers.map(w => `<option value="${w.id}">${w.name} (${w.skill})</option>`).join('');
-          if (currentVal) select.value = currentVal;
-        });
-      };
+      document.querySelectorAll('.worker-select').forEach(select => {
+        const currentVal = select.value;
+        select.innerHTML = workersCache.map(w => `<option value="${w.id}">${w.name} (${w.skill})</option>`).join('');
+        if (currentVal) select.value = currentVal;
+      });
     }
 
-    // Worker Registration Handler
-    document.getElementById("workerForm").onsubmit = (e) => {
+    // Worker Registration
+    document.getElementById("workerForm").onsubmit = async (e) => {
       e.preventDefault();
-      const tx = db.transaction("workers", "readwrite");
-      tx.objectStore("workers").add({
+      await db.collection("workers").add({
         name: document.getElementById("wName").value,
-        skill: document.getElementById("wSkill").value
+        skill: document.getElementById("wSkill").value,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      tx.oncomplete = () => {
-        document.getElementById("workerForm").reset();
-        refreshUI();
-      };
+      document.getElementById("workerForm").reset();
     };
 
     function renderWorkers() {
-      const tx = db.transaction("workers", "readonly");
-      tx.objectStore("workers").getAll().onsuccess = (e) => {
-        document.querySelector("#workerTable tbody").innerHTML = e.target.result.map(w => `
-          <tr>
-            <td>W-${w.id}</td>
-            <td>${w.name}</td>
-            <td>${w.skill}</td>
-            <td><button class="btn btn-danger" onclick="deleteRecord('workers', ${w.id})">Delete</button></td>
-          </tr>`).join('');
-      };
+      document.querySelector("#workerTable tbody").innerHTML = workersCache.map(w => `
+        <tr>
+          <td>${w.id.substring(0, 6)}</td>
+          <td>${w.name}</td>
+          <td>${w.skill}</td>
+          <td><button class="btn btn-danger" onclick="deleteRecord('workers', '${w.id}')">Delete</button></td>
+        </tr>`).join('');
     }
 
-    // Worker Search Profile Data Generator
-    function loadWorkerProfile() {
-      const targetWorkerId = parseInt(document.getElementById("searchWorker").value);
-      if (!targetWorkerId) {
-        document.getElementById("profileResults").style.display = "none";
-        return;
-      }
-      document.getElementById("profileResults").style.display = "block";
-
-      const tx = db.transaction(["logs", "advances", "shop"], "readonly");
-      
-      tx.objectStore("logs").getAll().onsuccess = (e) => {
-        const logs = e.target.result.filter(l => l.workerId === targetWorkerId);
-        let days = 0, ot = 0;
-        document.querySelector("#pLogTable tbody").innerHTML = logs.map(l => {
-          days += l.type; ot += l.ot;
-          return `<tr><td>${l.date}</td><td>${l.type === 1 ? 'Full Day' : 'Half Day'}</td><td>NPR ${l.ot.toFixed(2)}</td></tr>`;
-        }).join('') || '<tr><td colspan="3">No work logs found.</td></tr>';
-        
-        document.getElementById("p-days").innerText = days.toFixed(1);
-        document.getElementById("p-ot").innerText = `NPR ${ot.toFixed(2)}`;
-      };
-
-      tx.objectStore("advances").getAll().onsuccess = (e) => {
-        const advs = e.target.result.filter(a => a.workerId === targetWorkerId);
-        let sum = 0;
-        document.querySelector("#pAdvTable tbody").innerHTML = advs.map(a => {
-          sum += a.amount;
-          return `<tr><td>${a.date}</td><td>NPR ${a.amount.toFixed(2)}</td></tr>`;
-        }).join('') || '<tr><td colspan="2">No advances recorded.</td></tr>';
-        
-        document.getElementById("p-advances").innerText = `NPR ${sum.toFixed(2)}`;
-      };
-
-      tx.objectStore("shop").getAll().onsuccess = (e) => {
-        const shop = e.target.result.filter(s => s.workerId === targetWorkerId);
-        let sum = 0;
-        document.querySelector("#pShopTable tbody").innerHTML = shop.map(s => {
-          sum += s.cost;
-          return `<tr><td>${s.date}</td><td>${s.item}</td><td>NPR ${s.cost.toFixed(2)}</td></tr>`;
-        }).join('') || '<tr><td colspan="3">No shop items recorded.</td></tr>';
-
-        document.getElementById("p-shop").innerText = `NPR ${sum.toFixed(2)}`;
-      };
-    }
-
-    // Work Log Handler
-    document.getElementById("logForm").onsubmit = (e) => {
+    // Work & OT Logging
+    document.getElementById("logForm").onsubmit = async (e) => {
       e.preventDefault();
-      const workerId = parseInt(document.getElementById("logWorker").value);
-      const startDateStr = document.getElementById("logStartDate").value;
+      const workerId = document.getElementById("logWorker").value;
+      const startDate = new Date(document.getElementById("logStartDate").value);
       const endDateStr = document.getElementById("logEndDate").value;
+      const endDate = endDateStr ? new Date(endDateStr) : new Date(startDate);
       const type = parseFloat(document.getElementById("logType").value);
       const ot = parseFloat(document.getElementById("logOt").value) || 0;
-
-      const startDate = new Date(startDateStr);
-      const endDate = endDateStr ? new Date(endDateStr) : new Date(startDateStr);
 
       if (endDate < startDate) {
         alert("End Date cannot be before Start Date.");
         return;
       }
 
-      const tx = db.transaction("logs", "readwrite");
-      const store = tx.objectStore("logs");
-
+      const batch = db.batch();
       let curr = new Date(startDate);
       while (curr <= endDate) {
-        store.add({
+        const docRef = db.collection("logs").doc();
+        batch.set(docRef, {
           workerId: workerId,
           date: curr.toISOString().split('T')[0],
           type: type,
-          ot: ot
+          ot: ot,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         curr.setDate(curr.getDate() + 1);
       }
-
-      tx.oncomplete = () => { document.getElementById("logForm").reset(); refreshUI(); };
+      await batch.commit();
+      document.getElementById("logForm").reset();
     };
 
     function renderLogs() {
-      const tx = db.transaction(["logs", "workers"], "readonly");
-      const workersMap = {};
-      tx.objectStore("workers").getAll().onsuccess = (e) => {
-        e.target.result.forEach(w => workersMap[w.id] = w.name);
-        tx.objectStore("logs").getAll().onsuccess = (ev) => {
-          document.querySelector("#logTable tbody").innerHTML = ev.target.result.map(l => `
-            <tr>
-              <td>${l.date}</td>
-              <td>${workersMap[l.workerId] || 'Unknown'}</td>
-              <td>${l.type}</td>
-              <td>NPR ${l.ot.toFixed(2)}</td>
-              <td><button class="btn btn-danger" onclick="deleteRecord('logs', ${l.id})">Delete</button></td>
-            </tr>`).join('');
-        };
-      };
+      const workersMap = Object.fromEntries(workersCache.map(w => [w.id, w.name]));
+      document.querySelector("#logTable tbody").innerHTML = logsCache.map(l => `
+        <tr>
+          <td>${l.date}</td>
+          <td>${workersMap[l.workerId] || 'Unknown'}</td>
+          <td>${l.type}</td>
+          <td>NPR ${l.ot.toFixed(2)}</td>
+          <td><button class="btn btn-danger" onclick="deleteRecord('logs', '${l.id}')">Delete</button></td>
+        </tr>`).join('');
     }
 
-    // Advance Recording Handler
-    document.getElementById("advForm").onsubmit = (e) => {
+    // Advance Recording
+    document.getElementById("advForm").onsubmit = async (e) => {
       e.preventDefault();
-      const tx = db.transaction("advances", "readwrite");
-      tx.objectStore("advances").add({
-        workerId: parseInt(document.getElementById("advWorker").value),
+      await db.collection("advances").add({
+        workerId: document.getElementById("advWorker").value,
         date: document.getElementById("advDate").value,
-        amount: parseFloat(document.getElementById("advAmount").value) || 0
+        amount: parseFloat(document.getElementById("advAmount").value) || 0,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      tx.oncomplete = () => { document.getElementById("advForm").reset(); refreshUI(); };
+      document.getElementById("advForm").reset();
     };
 
     function renderAdvances() {
-      const tx = db.transaction(["advances", "workers"], "readonly");
-      const workersMap = {};
-      tx.objectStore("workers").getAll().onsuccess = (e) => {
-        e.target.result.forEach(w => workersMap[w.id] = w.name);
-        tx.objectStore("advances").getAll().onsuccess = (ev) => {
-          document.querySelector("#advTable tbody").innerHTML = ev.target.result.map(a => `
-            <tr>
-              <td>${a.date}</td>
-              <td>${workersMap[a.workerId] || 'Unknown'}</td>
-              <td>NPR ${a.amount.toFixed(2)}</td>
-              <td><button class="btn btn-danger" onclick="deleteRecord('advances', ${a.id})">Delete</button></td>
-            </tr>`).join('');
-        };
-      };
+      const workersMap = Object.fromEntries(workersCache.map(w => [w.id, w.name]));
+      document.querySelector("#advTable tbody").innerHTML = advancesCache.map(a => `
+        <tr>
+          <td>${a.date}</td>
+          <td>${workersMap[a.workerId] || 'Unknown'}</td>
+          <td>NPR ${a.amount.toFixed(2)}</td>
+          <td><button class="btn btn-danger" onclick="deleteRecord('advances', '${a.id}')">Delete</button></td>
+        </tr>`).join('');
     }
 
-    // Shop Item Consumption Handler
-    document.getElementById("shopForm").onsubmit = (e) => {
+    // Shop Item Recording
+    document.getElementById("shopForm").onsubmit = async (e) => {
       e.preventDefault();
-      const tx = db.transaction("shop", "readwrite");
-      tx.objectStore("shop").add({
-        workerId: parseInt(document.getElementById("shopWorker").value),
+      await db.collection("shop").add({
+        workerId: document.getElementById("shopWorker").value,
         date: document.getElementById("shopDate").value,
         item: document.getElementById("shopItem").value,
-        cost: parseFloat(document.getElementById("shopCost").value) || 0
+        cost: parseFloat(document.getElementById("shopCost").value) || 0,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      tx.oncomplete = () => { document.getElementById("shopForm").reset(); refreshUI(); };
+      document.getElementById("shopForm").reset();
     };
 
     function renderShop() {
-      const tx = db.transaction(["shop", "workers"], "readonly");
-      const workersMap = {};
-      tx.objectStore("workers").getAll().onsuccess = (e) => {
-        e.target.result.forEach(w => workersMap[w.id] = w.name);
-        tx.objectStore("shop").getAll().onsuccess = (ev) => {
-          document.querySelector("#shopTable tbody").innerHTML = ev.target.result.map(s => `
-            <tr>
-              <td>${s.date}</td>
-              <td>${workersMap[s.workerId] || 'Unknown'}</td>
-              <td>${s.item}</td>
-              <td>NPR ${s.cost.toFixed(2)}</td>
-              <td><button class="btn btn-danger" onclick="deleteRecord('shop', ${s.id})">Delete</button></td>
-            </tr>`).join('');
-        };
-      };
+      const workersMap = Object.fromEntries(workersCache.map(w => [w.id, w.name]));
+      document.querySelector("#shopTable tbody").innerHTML = shopCache.map(s => `
+        <tr>
+          <td>${s.date}</td>
+          <td>${workersMap[s.workerId] || 'Unknown'}</td>
+          <td>${s.item}</td>
+          <td>NPR ${s.cost.toFixed(2)}</td>
+          <td><button class="btn btn-danger" onclick="deleteRecord('shop', '${s.id}')">Delete</button></td>
+        </tr>`).join('');
     }
 
-    // Monthly Payroll Calculation Handler
+    // Worker Profile Records
+    function loadWorkerProfile() {
+      const targetWorkerId = document.getElementById("searchWorker").value;
+      if (!targetWorkerId) {
+        document.getElementById("profileResults").style.display = "none";
+        return;
+      }
+      document.getElementById("profileResults").style.display = "block";
+
+      const workerLogs = logsCache.filter(l => l.workerId === targetWorkerId);
+      let days = 0, ot = 0;
+      document.querySelector("#pLogTable tbody").innerHTML = workerLogs.map(l => {
+        days += l.type; ot += l.ot;
+        return `<tr><td>${l.date}</td><td>${l.type === 1 ? 'Full Day' : 'Half Day'}</td><td>NPR ${l.ot.toFixed(2)}</td></tr>`;
+      }).join('') || '<tr><td colspan="3">No work logs found.</td></tr>';
+      document.getElementById("p-days").innerText = days.toFixed(1);
+      document.getElementById("p-ot").innerText = `NPR ${ot.toFixed(2)}`;
+
+      const workerAdvs = advancesCache.filter(a => a.workerId === targetWorkerId);
+      let advSum = 0;
+      document.querySelector("#pAdvTable tbody").innerHTML = workerAdvs.map(a => {
+        advSum += a.amount;
+        return `<tr><td>${a.date}</td><td>NPR ${a.amount.toFixed(2)}</td></tr>`;
+      }).join('') || '<tr><td colspan="2">No advances recorded.</td></tr>';
+      document.getElementById("p-advances").innerText = `NPR ${advSum.toFixed(2)}`;
+
+      const workerShop = shopCache.filter(s => s.workerId === targetWorkerId);
+      let shopSum = 0;
+      document.querySelector("#pShopTable tbody").innerHTML = workerShop.map(s => {
+        shopSum += s.cost;
+        return `<tr><td>${s.date}</td><td>${s.item}</td><td>NPR ${s.cost.toFixed(2)}</td></tr>`;
+      }).join('') || '<tr><td colspan="3">No shop items recorded.</td></tr>';
+      document.getElementById("p-shop").innerText = `NPR ${shopSum.toFixed(2)}`;
+    }
+
+    // Monthly Payroll Calculation
     document.getElementById("payrollForm").onsubmit = (e) => {
       e.preventDefault();
-      const targetWorkerId = parseInt(document.getElementById("payWorker").value);
+      const targetWorkerId = document.getElementById("payWorker").value;
       const dailyWage = parseFloat(document.getElementById("payWage").value) || 0;
       const paidAmount = parseFloat(document.getElementById("payPaid").value) || 0;
 
-      const tx = db.transaction(["workers", "logs", "advances", "shop"], "readonly");
-      let workerName = "", workedDays = 0, totalOt = 0, advancesTotal = 0, shopTotal = 0;
+      const worker = workersCache.find(w => w.id === targetWorkerId);
+      const workerName = worker ? worker.name : "Unknown";
 
-      tx.objectStore("workers").get(targetWorkerId).onsuccess = (ev) => {
-        if (ev.target.result) workerName = ev.target.result.name;
-      };
-
-      tx.objectStore("logs").getAll().onsuccess = (ev) => {
-        ev.target.result.filter(l => l.workerId === targetWorkerId).forEach(l => {
-          workedDays += l.type;
-          totalOt += l.ot;
-        });
-      };
-
-      tx.objectStore("advances").getAll().onsuccess = (ev) => {
-        ev.target.result.filter(a => a.workerId === targetWorkerId).forEach(a => advancesTotal += a.amount);
-      };
-
-      tx.objectStore("shop").getAll().onsuccess = (ev) => {
-        ev.target.result.filter(s => s.workerId === targetWorkerId).forEach(s => shopTotal += s.cost);
-      };
-
-      tx.oncomplete = () => {
-        const grossEarned = (workedDays * dailyWage) + totalOt;
-        const remainingBalance = grossEarned - (advancesTotal + shopTotal + paidAmount);
-
-        document.querySelector("#payrollTable tbody").innerHTML = `
-          <tr>
-            <td>${workerName}</td>
-            <td>${workedDays.toFixed(1)}</td>
-            <td>NPR ${grossEarned.toFixed(2)}</td>
-            <td>NPR ${advancesTotal.toFixed(2)}</td>
-            <td>NPR ${shopTotal.toFixed(2)}</td>
-            <td>NPR ${paidAmount.toFixed(2)}</td>
-            <td style="font-weight:bold; color: ${remainingBalance >= 0 ? '#27ae60' : '#e74c3c'};">
-              NPR ${remainingBalance.toFixed(2)}
-            </td>
-          </tr>`;
-      };
-    };
-
-    // Calculate Summary Metrics for Dashboard
-    function renderDashboardMetrics() {
-      const tx = db.transaction(["workers", "logs", "advances", "shop"], "readonly");
-
-      tx.objectStore("workers").count().onsuccess = (e) => {
-        document.getElementById("m-workers").innerText = e.target.result;
-      };
-
-      tx.objectStore("logs").getAll().onsuccess = (e) => {
-        let totalDays = 0, totalOt = 0;
-        e.target.result.forEach(l => { totalDays += l.type; totalOt += l.ot; });
-        document.getElementById("m-days").innerText = totalDays.toFixed(1);
-        document.getElementById("m-ot").innerText = totalOt.toFixed(2);
-      };
-
-      tx.objectStore("advances").getAll().onsuccess = (e) => {
-        let advSum = 0;
-        e.target.result.forEach(a => advSum += a.amount);
-        document.getElementById("m-advances").innerText = advSum.toFixed(2);
-      };
-
-      tx.objectStore("shop").getAll().onsuccess = (e) => {
-        let shopSum = 0;
-        e.target.result.forEach(s => shopSum += s.cost);
-        document.getElementById("m-shop").innerText = shopSum.toFixed(2);
-      };
-    }
-
-    // Backup Export Handler
-    function exportData() {
-      const backup = {};
-      const stores = ["workers", "logs", "advances", "shop"];
-      const tx = db.transaction(stores, "readonly");
-
-      stores.forEach(store => {
-        tx.objectStore(store).getAll().onsuccess = (e) => {
-          backup[store] = e.target.result;
-        };
+      let workedDays = 0, totalOt = 0, advancesTotal = 0, shopTotal = 0;
+      logsCache.filter(l => l.workerId === targetWorkerId).forEach(l => {
+        workedDays += l.type;
+        totalOt += l.ot;
       });
 
-      tx.oncomplete = () => {
-        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `workshop_backup_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-      };
+      advancesCache.filter(a => a.workerId === targetWorkerId).forEach(a => advancesTotal += a.amount);
+      shopCache.filter(s => s.workerId === targetWorkerId).forEach(s => shopTotal += s.cost);
+
+      const grossEarned = (workedDays * dailyWage) + totalOt;
+      const remainingBalance = grossEarned - (advancesTotal + shopTotal + paidAmount);
+
+      document.querySelector("#payrollTable tbody").innerHTML = `
+        <tr>
+          <td>${workerName}</td>
+          <td>${workedDays.toFixed(1)}</td>
+          <td>NPR ${grossEarned.toFixed(2)}</td>
+          <td>NPR ${advancesTotal.toFixed(2)}</td>
+          <td>NPR ${shopTotal.toFixed(2)}</td>
+          <td>NPR ${paidAmount.toFixed(2)}</td>
+          <td style="font-weight:bold; color: ${remainingBalance >= 0 ? '#27ae60' : '#e74c3c'};">
+            NPR ${remainingBalance.toFixed(2)}
+          </td>
+        </tr>`;
+    };
+
+    // Dashboard Metric Calculations
+    function renderDashboardMetrics() {
+      document.getElementById("m-workers").innerText = workersCache.length;
+      let totalDays = 0, totalOt = 0;
+      logsCache.forEach(l => { totalDays += l.type; totalOt += l.ot; });
+      document.getElementById("m-days").innerText = totalDays.toFixed(1);
+      document.getElementById("m-ot").innerText = totalOt.toFixed(2);
+
+      let advSum = 0;
+      advancesCache.forEach(a => advSum += a.amount);
+      document.getElementById("m-advances").innerText = advSum.toFixed(2);
+
+      let shopSum = 0;
+      shopCache.forEach(s => shopSum += s.cost);
+      document.getElementById("m-shop").innerText = shopSum.toFixed(2);
     }
 
-    // Backup Import Handler
+    // Permanent Deletion Across Devices
+    async function deleteRecord(collectionName, id) {
+      if (confirm("Delete this record permanently across all devices?")) {
+        await db.collection(collectionName).doc(id).delete();
+      }
+    }
+
+    // Backup Export
+    function exportData() {
+      const backup = { workers: workersCache, logs: logsCache, advances: advancesCache, shop: shopCache };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `workshop_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Backup Import
     function importData() {
       const fileInput = document.getElementById("importFile");
-      if (!fileInput.files.length) {
-        alert("Please select a JSON backup file first.");
-        return;
-      }
-
+      if (!fileInput.files.length) return alert("Select a JSON backup file first.");
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const backup = JSON.parse(e.target.result);
-          const stores = ["workers", "logs", "advances", "shop"];
-          const tx = db.transaction(stores, "readwrite");
-
-          stores.forEach(storeName => {
-            if (backup[storeName]) {
-              const store = tx.objectStore(storeName);
-              store.clear();
-              backup[storeName].forEach(item => store.add(item));
+          for (const col of ["workers", "logs", "advances", "shop"]) {
+            if (backup[col] && Array.isArray(backup[col])) {
+              for (const item of backup[col]) {
+                const { id, ...data } = item;
+                await db.collection(col).add(data);
+              }
             }
-          });
-
-          tx.oncomplete = () => {
-            alert("Data successfully restored from backup!");
-            refreshUI();
-          };
+          }
+          alert("Import completed successfully!");
         } catch (err) {
-          alert("Error parsing backup file. Make sure it is a valid backup JSON file.");
+          alert("Invalid backup file.");
         }
       };
       reader.readAsText(fileInput.files[0]);
-    }
-
-    // Generic Delete Record
-    function deleteRecord(storeName, id) {
-      const tx = db.transaction(storeName, "readwrite");
-      tx.objectStore(storeName).delete(id);
-      tx.oncomplete = () => refreshUI();
     }
   </script>
 </body>
