@@ -119,7 +119,7 @@
   <main>
     <div class="header-banner">
       <h1>🪚 Furniture Workshop Record & Monthly Payroll</h1>
-      <p>Clean Numeric IDs • Real-Time Synchronization</p>
+      <p>Clean Numeric IDs • Real-Time Synchronization • Chronological Sorting</p>
     </div>
 
     <!-- TAB 1: DASHBOARD -->
@@ -185,7 +185,7 @@
         </div>
 
         <div class="card">
-          <h4 class="card-title">Attendance & Overtime Records</h4>
+          <h4 class="card-title">Attendance & Overtime Records (Newest First)</h4>
           <div class="table-responsive">
             <table id="pLogTable">
               <thead><tr><th>Date</th><th>Shift Type</th><th>OT Earnings</th></tr></thead>
@@ -195,7 +195,7 @@
         </div>
 
         <div class="card">
-          <h4 class="card-title">Advance Payments Taken</h4>
+          <h4 class="card-title">Advance Payments Taken (Newest First)</h4>
           <div class="table-responsive">
             <table id="pAdvTable">
               <thead><tr><th>Date</th><th>Amount (NPR)</th></tr></thead>
@@ -205,7 +205,7 @@
         </div>
 
         <div class="card">
-          <h4 class="card-title">Shop Items Taken</h4>
+          <h4 class="card-title">Shop Items Taken (Newest First)</h4>
           <div class="table-responsive">
             <table id="pShopTable">
               <thead><tr><th>Date</th><th>Item Description</th><th>Cost (NPR)</th></tr></thead>
@@ -430,7 +430,7 @@
       if (tabId === 'search') loadWorkerProfile();
     }
 
-    // Real-Time Listeners
+    // Real-Time Listeners with Automatic Date Sorting (Descending: Newest First)
     db.collection("workers").onSnapshot(snapshot => {
       workersCache = snapshot.docs.map(doc => ({ id: String(doc.id), ...doc.data() }));
       workersCache.sort((a, b) => (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0));
@@ -441,20 +441,29 @@
 
     db.collection("logs").onSnapshot(snapshot => {
       logsCache = snapshot.docs.map(doc => ({ id: String(doc.id), ...doc.data() }));
+      // Sort newest dates at the top
+      logsCache.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       renderLogs();
       renderDashboardMetrics();
+      if (document.getElementById('search').classList.contains('active')) loadWorkerProfile();
     });
 
     db.collection("advances").onSnapshot(snapshot => {
       advancesCache = snapshot.docs.map(doc => ({ id: String(doc.id), ...doc.data() }));
+      // Sort newest dates at the top
+      advancesCache.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       renderAdvances();
       renderDashboardMetrics();
+      if (document.getElementById('search').classList.contains('active')) loadWorkerProfile();
     });
 
     db.collection("shop").onSnapshot(snapshot => {
       shopCache = snapshot.docs.map(doc => ({ id: String(doc.id), ...doc.data() }));
+      // Sort newest dates at the top
+      shopCache.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       renderShop();
       renderDashboardMetrics();
+      if (document.getElementById('search').classList.contains('active')) loadWorkerProfile();
     });
 
     function populateWorkerDropdowns() {
@@ -465,14 +474,13 @@
       });
     }
 
-    // Worker Registration: Auto-Increment Numeric ID (No Hashes)
+    // Worker Registration
     document.getElementById("workerForm").onsubmit = async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('button');
       btn.disabled = true;
 
       try {
-        // Calculate the next clean numeric ID
         const existingNumericIds = workersCache.map(w => parseInt(w.id, 10)).filter(n => !isNaN(n));
         const nextId = existingNumericIds.length > 0 ? Math.max(...existingNumericIds) + 1 : 1;
         const newDocId = String(nextId);
@@ -535,8 +543,8 @@
       const workersMap = Object.fromEntries(workersCache.map(w => [String(w.id), w.name]));
       document.querySelector("#logTable tbody").innerHTML = logsCache.map(l => `
         <tr>
-          <td>${l.date}</td>
-          <td><strong>${workersMap[String(l.workerId)] || 'Unknown'}</strong></td>
+          <td><strong>${l.date}</strong></td>
+          <td>${workersMap[String(l.workerId)] || 'Unknown'}</td>
           <td>${l.type}</td>
           <td>NPR ${Number(l.ot || 0).toFixed(2)}</td>
           <td><button class="btn-danger" onclick="deleteRecord('logs', '${l.id}')">Delete</button></td>
@@ -559,8 +567,8 @@
       const workersMap = Object.fromEntries(workersCache.map(w => [String(w.id), w.name]));
       document.querySelector("#advTable tbody").innerHTML = advancesCache.map(a => `
         <tr>
-          <td>${a.date}</td>
-          <td><strong>${workersMap[String(a.workerId)] || 'Unknown'}</strong></td>
+          <td><strong>${a.date}</strong></td>
+          <td>${workersMap[String(a.workerId)] || 'Unknown'}</td>
           <td>NPR ${Number(a.amount || 0).toFixed(2)}</td>
           <td><button class="btn-danger" onclick="deleteRecord('advances', '${a.id}')">Delete</button></td>
         </tr>`).join('');
@@ -583,15 +591,15 @@
       const workersMap = Object.fromEntries(workersCache.map(w => [String(w.id), w.name]));
       document.querySelector("#shopTable tbody").innerHTML = shopCache.map(s => `
         <tr>
-          <td>${s.date}</td>
-          <td><strong>${workersMap[String(s.workerId)] || 'Unknown'}</strong></td>
+          <td><strong>${s.date}</strong></td>
+          <td>${workersMap[String(s.workerId)] || 'Unknown'}</td>
           <td>${s.item}</td>
           <td>NPR ${Number(s.cost || 0).toFixed(2)}</td>
           <td><button class="btn-danger" onclick="deleteRecord('shop', '${s.id}')">Delete</button></td>
         </tr>`).join('');
     }
 
-    // Worker Search Profile
+    // Worker Profile with Systematic Chronological Order
     function loadWorkerProfile() {
       const targetWorkerId = String(document.getElementById("searchWorker").value);
       if (!targetWorkerId) {
@@ -600,28 +608,31 @@
       }
       document.getElementById("profileResults").style.display = "block";
 
-      const workerLogs = logsCache.filter(l => String(l.workerId) === targetWorkerId);
+      const workerLogs = logsCache.filter(l => String(l.workerId) === targetWorkerId)
+                                 .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       let days = 0, ot = 0;
       document.querySelector("#pLogTable tbody").innerHTML = workerLogs.map(l => {
         days += Number(l.type || 0); ot += Number(l.ot || 0);
-        return `<tr><td>${l.date}</td><td>${l.type === 1 ? 'Full Day' : 'Half Day'}</td><td>NPR ${Number(l.ot || 0).toFixed(2)}</td></tr>`;
+        return `<tr><td><strong>${l.date}</strong></td><td>${l.type === 1 ? 'Full Day' : 'Half Day'}</td><td>NPR ${Number(l.ot || 0).toFixed(2)}</td></tr>`;
       }).join('') || '<tr><td colspan="3">No work logs found.</td></tr>';
       document.getElementById("p-days").innerText = days.toFixed(1);
       document.getElementById("p-ot").innerText = `NPR ${ot.toFixed(2)}`;
 
-      const workerAdvs = advancesCache.filter(a => String(a.workerId) === targetWorkerId);
+      const workerAdvs = advancesCache.filter(a => String(a.workerId) === targetWorkerId)
+                                      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       let advSum = 0;
       document.querySelector("#pAdvTable tbody").innerHTML = workerAdvs.map(a => {
         advSum += Number(a.amount || 0);
-        return `<tr><td>${a.date}</td><td>NPR ${Number(a.amount || 0).toFixed(2)}</td></tr>`;
+        return `<tr><td><strong>${a.date}</strong></td><td>NPR ${Number(a.amount || 0).toFixed(2)}</td></tr>`;
       }).join('') || '<tr><td colspan="2">No advances recorded.</td></tr>';
       document.getElementById("p-advances").innerText = `NPR ${advSum.toFixed(2)}`;
 
-      const workerShop = shopCache.filter(s => String(s.workerId) === targetWorkerId);
+      const workerShop = shopCache.filter(s => String(s.workerId) === targetWorkerId)
+                                  .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       let shopSum = 0;
       document.querySelector("#pShopTable tbody").innerHTML = workerShop.map(s => {
         shopSum += Number(s.cost || 0);
-        return `<tr><td>${s.date}</td><td>${s.item}</td><td>NPR ${Number(s.cost || 0).toFixed(2)}</td></tr>`;
+        return `<tr><td><strong>${s.date}</strong></td><td>${s.item}</td><td>NPR ${Number(s.cost || 0).toFixed(2)}</td></tr>`;
       }).join('') || '<tr><td colspan="3">No shop items recorded.</td></tr>';
       document.getElementById("p-shop").innerText = `NPR ${shopSum.toFixed(2)}`;
     }
